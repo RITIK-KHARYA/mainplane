@@ -84,6 +84,10 @@ func Connect(conn net.Conn, admit func() (string, error)) (*Remote, error) {
 	}
 	r := &Remote{Header: hello.Header, conn: conn, calls: map[string]chan worker.Frame{}, left: map[string]chan struct{}{}, done: make(chan struct{})}
 	r.Name, r.Header.Drives = name, nil
+	// panic condition handling:
+	if len(r.Interps) == 0 {
+		return r, fmt.Errorf("worker %s: hello no interpreter", name)
+	}
 	if !version.Match(hello.Version) {
 		return r, fmt.Errorf("worker is version %s, harness is %s: %w", hello.Version, version.V, update(conn, br))
 	}

@@ -396,7 +396,8 @@ func follow(ctx context.Context, lb *ipnlocal.LocalBackend, h *health.Tracker, h
 		err := lb.Start(ipn.Options{UpdatePrefs: p, AuthKey: secret})
 		// A node with no keys yet registers with the secret, as tsnet does.
 		if err == nil && lb.State() == ipn.NeedsLogin {
-			err = lb.StartLoginInteractive(context.Background())
+			// the login wait ends when the harness does
+			err = lb.StartLoginInteractive(ctx)
 		}
 		if err != nil {
 			log.Printf("mesh: start at %s: %v", u, err)

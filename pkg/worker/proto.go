@@ -8,6 +8,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 )
@@ -107,7 +108,11 @@ func Encode(w io.Writer, f Frame) error {
 }
 
 func Decode(br *bufio.Reader) (Frame, error) {
-	line, err := br.ReadBytes('\n')
+	// bound the header too: a bad stream must not allocate without end
+	line, err := br.ReadSlice('\n')
+	if errors.Is(err, bufio.ErrBufferFull) {
+		return Frame{}, fmt.Errorf("frame header: over %d bytes", br.Size())
+	}
 	if err != nil {
 		return Frame{}, err
 	}

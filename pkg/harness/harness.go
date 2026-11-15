@@ -194,6 +194,13 @@ func (h *Harness) create(ctx context.Context, id string, c Create, via string) e
 	if err != nil {
 		return err
 	}
+	// a failed append leaves the file open; close it unless Close succeeded
+	done := false
+	defer func() {
+		if !done {
+			_ = f.Close()
+		}
+	}()
 	if err := f.Append(system("harness", System(model, prompt))); err != nil {
 		return err
 	}
@@ -209,7 +216,11 @@ func (h *Harness) create(ctx context.Context, id string, c Create, via string) e
 		}
 	}
 	h.touch(id)
-	return f.Close()
+	if err := f.Close(); err != nil {
+		return err
+	}
+	done = true
+	return nil
 }
 
 // copy copies session from up to record n as id, made by via, and answers

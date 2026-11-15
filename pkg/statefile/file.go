@@ -56,9 +56,16 @@ func Create(path, via string, config []byte) (*File, error) {
 	}
 	sf := &File{Path: path, f: f}
 	if err := sf.Append(Record{Header: Header{Kind: Start, Via: via}}); err != nil {
+		// close before the error return; the file is otherwise leaked
+		_ = f.Close()
 		return nil, err
 	}
-	return sf, sf.Append(Record{Header: Header{Kind: Config, Type: "application/json"}, Body: config})
+	if err := sf.Append(Record{Header: Header{Kind: Config, Type: "application/json"}, Body: config}); err != nil {
+		// close before the error return; the file is otherwise leaked
+		_ = f.Close()
+		return nil, err
+	}
+	return sf, nil
 }
 
 // Copy makes dst from records 1 through n-1 of src: the start record with
@@ -115,14 +122,18 @@ func Open(path string) (*File, error) {
 	if err != nil {
 		return nil, err
 	}
+	// a scan, truncate or seek that fails leaks the file; close it on each way out
 	recs, good, err := scan(f)
 	if err != nil {
+		_ = f.Close()
 		return nil, err
 	}
 	if err := f.Truncate(good); err != nil {
+		_ = f.Close()
 		return nil, err
 	}
 	if _, err := f.Seek(good, io.SeekStart); err != nil {
+		_ = f.Close()
 		return nil, err
 	}
 	return &File{Path: path, f: f, n: len(recs)}, nil

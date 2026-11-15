@@ -94,7 +94,12 @@ func (s service) Execute(_ []string, reqs <-chan svc.ChangeRequest, status chan<
 			log.Printf("harness: %v", err)
 			cancel()
 			return false, 1
-		case r := <-reqs:
+			// a closed channel would otherwise spin on zero-value requests
+		case r, ok := <-reqs:
+			if !ok {
+				cancel()
+				return false, 0
+			}
 			//exhaustive:ignore the service accepts stop and shutdown only
 			switch r.Cmd {
 			case svc.Interrogate:

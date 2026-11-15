@@ -314,7 +314,10 @@ func (c *Coordinator) expire(n *node) {
 			log.Printf("coordinator: %v", err)
 		}
 		log.Printf("coordinator: %s expired, no map poll for %s", n.Name, idle)
-		go c.Gone(n.Name)
+		// Gone is optional and assigned after New
+		if c.Gone != nil {
+			go c.Gone(n.Name)
+		}
 	})
 }
 
@@ -374,7 +377,10 @@ func (c *Coordinator) register(machine key.MachinePublic, addr string, req tailc
 				return tailcfg.RegisterResponse{Error: err.Error()}
 			}
 			log.Printf("coordinator: %s left", n.Name)
-			go c.Gone(n.Name)
+			// Gone is optional and assigned after New
+			if c.Gone != nil {
+				go c.Gone(n.Name)
+			}
 		}
 		return tailcfg.RegisterResponse{NodeKeyExpired: true}
 	}

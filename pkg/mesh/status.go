@@ -160,7 +160,12 @@ func (m *Mesh) status() string {
 				path += ", offline"
 			}
 		}
-		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\n", p.Name(), p.Addresses().At(0).Addr(), path)
+		// a peer in the netmap may have no address yet
+		addr := "no address"
+		if p.Addresses().Len() > 0 {
+			addr = p.Addresses().At(0).Addr().String()
+		}
+		_, _ = fmt.Fprintf(w, "%s	%s	%s\n", p.Name(), addr, path)
 	}
 	_ = w.Flush()
 	if f := m.report.Load(); f != nil {

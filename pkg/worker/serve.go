@@ -136,6 +136,10 @@ func (s *server) answer(f Frame) (Frame, error) {
 func (s *server) run(f Frame) (Frame, error) {
 	name := f.Interp
 	if name == "" {
+		// no interpreter named and none to default to
+		if len(s.Interps) == 0 {
+			return Frame{}, fmt.Errorf("no interpreter named and this worker runs none")
+		}
 		name = s.Interps[0]
 	}
 	if !slices.Contains(s.Interps, name) {

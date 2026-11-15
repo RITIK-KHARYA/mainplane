@@ -81,6 +81,10 @@ func (h *Harness) scratch(ctx context.Context, id, name string) string {
 	if !ok {
 		return fmt.Sprintf("\nworker %s, scratch: not connected\n", name)
 	}
+	// no interpreter: the listing has nothing to run with
+	if len(r.Interps) == 0 {
+		return fmt.Sprintf("\nworker %s, scratch: no interpreter\n", name)
+	}
 	return scan(ctx, r, id, fmt.Sprintf("worker %s, scratch %s", name, r.Scratch), r.Scratch, listing(r.Interps[0], r.Scratch))
 }
 
@@ -92,6 +96,10 @@ func (h *Harness) drive(ctx context.Context, id, name string) string {
 	s, root, ok := h.server(name)
 	if !ok {
 		return fmt.Sprintf("\ndrive %s: no connected worker serves it\n", name)
+	}
+	// no interpreter: the drive listing has nothing to run with
+	if len(s.Interps) == 0 {
+		return fmt.Sprintf("\ndrive %s: the worker serving it names no interpreter\n", name)
 	}
 	interp, dir := s.Interps[0], path.Dir(root)
 	code := fmt.Sprintf("(cd %s && %s)", quote(interp, dir), listing(interp, path.Base(root)))
@@ -109,6 +117,10 @@ func scan(ctx context.Context, r *Remote, id, head, root, code string) string {
 	fmt.Fprintf(&b, "\n%s\nread %s\n", head, file)
 	rec, cut := call(ctx, r, id, "read", args{Path: file})
 	b.WriteString(text("read", args{Path: file}, rec, cut))
+	// no interpreter: leave the section after the read
+	if len(r.Interps) == 0 {
+		return b.String()
+	}
 	interp := r.Interps[0]
 	fmt.Fprintf(&b, "run %s: %s\n", interp, code)
 	rec, cut = call(ctx, r, id, "run", args{Interpreter: interp, Code: code})
